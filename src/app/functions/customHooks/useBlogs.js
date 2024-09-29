@@ -29,5 +29,5 @@ export const useBlogs = () =>
     useEffect(() => {
         fetchBlogs();
     },[]);
-    return {blogs, loading, error};
+    return {blogs, loading, error,setBlogs};
 };
