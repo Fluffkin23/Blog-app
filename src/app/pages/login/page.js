@@ -11,24 +11,25 @@ export default function SignIn() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        // Calling NextAuth signIn method
+        // Call NextAuth signIn method with a callbackUrl for redirection
         const result = await signIn('credentials', {
-            redirect: false, // Prevent NextAuth from redirecting automatically
+            redirect: true, // Disable automatic redirect
             email,
-            password
+            password,
+            callbackUrl: '/', // Redirect to the home page after login
         });
 
         if (!result.error) {
-            // Redirect the user to their dashboard or home page upon successful login
-            window.location.href = 'http://localhost:3000';
+            // Use the provided callbackUrl from NextAuth to redirect
+            window.location.href = result.url || '/'; // Fallback to home page if no URL is provided
         } else {
-            // Handle errors, e.g., show an error message
-            alert(result.error);
+            // Set an error message instead of using alert
+            console.log('Login failed. Please check your credentials.');
         }
     };
 
     return (
-        <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 400, mx: 'auto' }}>
+        <Box component="form"   onSubmit={handleSubmit} sx={{ maxWidth: 400, mx: 'auto' }}>
             <TextField
                 fullWidth
                 label="Email"

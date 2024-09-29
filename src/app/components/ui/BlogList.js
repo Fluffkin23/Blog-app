@@ -4,25 +4,17 @@ import axios from "axios";
 import Link from "next/link";
 import { useState,useEffect } from "react";
 import BlogItem from "./BlogItem";
+import {useBlogs} from "@/app/functions/customHooks/useBlogs";
 
 export default function BlogList() {
 
     // State to handle the currently active category filter
     const [menu, setMenu] = useState('All');
     // State to store blogs posts
-    const [blogs, setBlogs] = useState([]);
+    const { blogs, loading, error } = useBlogs(); // Use the custom hook
 
-    // Fetch blog data from the server
-    const fetchBlogs = async () => {
-        const response = await axios.get('/api/blog');
-        // Update state with fetched blogs
-        setBlogs(response.data.blogs);
-    }
-
-    // Effect to fetch blogs on component mount
-    useEffect(() => {
-        fetchBlogs();
-    },[]);
+    if (loading) return <Typography align="center">Loading...</Typography>; // Show a loading state
+    if (error) return <Typography align="center">Error: {error.message}</Typography>; // Show error state
 
     return (
         <Container>
@@ -45,7 +37,7 @@ export default function BlogList() {
             <Grid container spacing={4}>
                 {/** Filters blogs based on selected category and maps to Grid items */}
                 {blogs.filter(blog => menu == 'All' || blog.category === menu).map((blog, index) => (
-                    <Grid items xs={12} sm={6} md={4} key={index}>
+                    <Grid item xs={12} sm={6} md={4} key={index}>
                         {/** Link to the individual blog post */}
                         <Link href={`/pages/single_post/${blog._id}`}>
                             <CardActionArea sx={{my:5}}>

@@ -1,25 +1,48 @@
 "use client";
 import React, { useState } from 'react';
-import Image from 'next/image';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Box, Button, TextField, FormControl, InputLabel, Select, MenuItem, Typography, FormHelperText } from '@mui/material';
+import { Box, Button, TextField, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // Ensure CSS is correctly imported
+import 'react-quill/dist/quill.snow.css';
+import {signIn, useSession} from "next-auth/react";
 
 
 
-const Page = () => {
+
+export default  function UploadPage  () {
+
   const [image, setImage] = useState(null);
+
   const [data, setData] = useState({
     title: "",
     description: "",
     summary:"",
-    category: "Startup", // default category
-    author: "Costache Alin",
-    authorImage: "/author_img.png",
+    category: "", // default category
+    author: "",
+    authorImage:""
   });
+
+  const {data:session, status}=useSession();
+
+  if(status === 'loading')
+  {
+    return <p>Loading....</p>;
+  }
+
+  if(!session)
+  {
+    return <p>You need to be loggin in to view this page</p>;
+
+  }
+
+  const {name, profile_pic,role} = session.user;
+  if(role !== 'admin')
+  {
+    return <p>You need to be admin in to view this page</p>;
+  }
+
 
   const onChangeHandler = (event) => {
     const { name, value } = event.target;
@@ -43,10 +66,11 @@ const Page = () => {
     formData.append('description', data.description);
     formData.append('summary', data.summary);
     formData.append('category', data.category);
-    formData.append('author', data.author);
-    formData.append('authorImage', data.authorImage);
+    formData.append('author', name);
+    formData.append('authorImage', profile_pic);
     formData.append('image', image);
 
+    // reset the fields from the upload page
     try {
       const response = await axios.post('/api/blog', formData);
       if (response.data.success) {
@@ -56,9 +80,9 @@ const Page = () => {
           title: "",
           description: "",
           summary:"",
-          category: "Startup",
-          author: "Costache Alin",
-          authorImage: "/author_img.png",
+          category: "",
+          author: name,
+          authorImage: profile_pic,
         });
       } else {
         throw new Error('Submission failed');
@@ -135,6 +159,5 @@ const Page = () => {
       </Button>
     </Box>
   );
-};
+}
 
-export default Page;

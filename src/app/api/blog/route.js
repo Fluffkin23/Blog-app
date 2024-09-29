@@ -77,6 +77,62 @@ export async function POST(request)
     console.log("Blog Saved");
 
     return NextResponse.json({ success: true, msg: "Blog Added" });
+}
 
+//DELETE API
+export async function DELETE(request){
+    const url = new URL(request.url);
+    const blogId = url.searchParams.get("id");
+    console.log("Delete request for blog ID:", blogId);  // Log the ID
 
+    if (!blogId) {
+        console.log("Blog ID missing");
+        return NextResponse.json({ success: false, msg: "Blog ID is required" }, { status: 400 });
+    }
+
+    try {
+        const deletedBlog = await BlogModel.findByIdAndDelete(blogId);
+        if (!deletedBlog) {
+            console.log("Blog not found");
+            return NextResponse.json({ success: false, msg: "Blog not found" }, { status: 404 });
+        }
+        console.log("Blog deleted successfully");
+        return NextResponse.json({ success: true, msg: "Blog deleted" }, { status: 200 });
+    } catch (error) {
+        console.error("Error deleting blog:", error);
+        return NextResponse.json({ success: false, msg: "Failed to delete blog", error: error.message }, { status: 500 });
+    }
+}
+
+// PUT API to update blog
+export async function PUT(request)
+{
+    const url = new URL(request.url);
+    const blogId = url.searchParams.get("id");
+
+    if (!blogId) {
+        return new Response(JSON.stringify({ success: false, msg: "Blog ID is required" }), { status: 400 });
+    }
+
+    try {
+        const formData = await request.formData();
+        const updatedBlog = await BlogModel.findByIdAndUpdate(blogId, {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            summary: formData.get('summary'),
+            category: formData.get('category'),
+            image: formData.get('image'), // If updating the image
+            author: formData.get('author'),
+            authorImage: formData.get('authorImage'),
+        }, { new: true });
+
+        if (!updatedBlog) {
+            return new Response(JSON.stringify({ success: false, msg: "Blog not found" }), { status: 404 });
+        }
+
+        return new Response(JSON.stringify({ success: true, msg: "Blog updated" }), { status: 200 });
+    } catch (error) {
+        console.error("Error updating blog:", error);
+        return new Response(JSON.stringify({ success: false, msg: "Failed to update blog", error: error.message }), { status: 500 });
+    }
 }

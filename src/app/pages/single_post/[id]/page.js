@@ -2,39 +2,39 @@
 import { Avatar, Box, IconButton, Stack, Typography } from "@mui/material";
 import axios from "axios";
 import DOMPurify from "dompurify";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import GoogleIcon from '@mui/icons-material/Google';
 import Image from "next/image";
 import { useRouter } from 'next/router';
+import {useSession} from "next-auth/react";
+import {fetchBlog} from "@/app/functions/customHooks/fetch_blog_by_id";
+import {useAuthSession} from "@/app/functions/customHooks/useAuthSession";
 
 
 export default function BlogPage({params})
 {
-  const [data, setData] = useState(null);
+  // Use the custom hook for blog data
+  const { data, loading, error } = fetchBlog(params.id)
+  // Use the custom hook for session
+  const { session, status } = useAuthSession();
 
-  const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth(); // Your auth hook should provide these
+  if (status === 'loading') {
+    return <p>Loading....</p>;
+  }
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/pages/login'); // Redirect to login if not authenticated
-    }
-  }, [isAuthenticated, isLoading, router])
+  if (!session) {
+    return <p>You need to be logged in to view this page</p>;
+  }
 
+  if (loading) {
+    return <p>Loading...</p>;  // Add loading state handling
+  }
 
-  // Fetches blog data from the server
-  const fetchBlogData = async () =>
-  {
-    const response = await axios.get('/api/blog',{params:{id:params.id}});
-    setData(response.data);
-  };
-
-  // Effect to trigger data fetching on component mount
-  useEffect(() =>{
-    fetchBlogData();
-  },[]);
+  if (error) {
+    return <p>Error loading blog data: {error.message}</p>;  // Add error handling
+  }
 
   // Component to render saniitized HTML content safetly
   function SafeHtmlTypography({htmlContent})

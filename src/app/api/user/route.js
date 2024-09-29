@@ -71,3 +71,47 @@ export  async function POST(request) {
 
     return NextResponse.json({ success: true, msg: "User Added" });
 }
+
+// Delete user (DELETE)
+export async function DELETE(request)
+{
+    const userId = request.nextUrl.searchParams.get("id");  // Extract user ID from the query parameters
+
+    if (!userId) {
+        return NextResponse.json({ success: false, msg: "User ID is required" }, { status: 400 });
+    }
+
+    try {
+        const deletedUser = await UserModel.findByIdAndDelete(userId);  // Delete the user by ID
+        if (!deletedUser) {
+            return NextResponse.json({ success: false, msg: "User not found" }, { status: 404 });
+        }
+        return NextResponse.json({ success: true, msg: "User deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        return NextResponse.json({ success: false, msg: "Failed to delete user", error: error.message }, { status: 500 });
+    }
+}
+
+// Update User Role(PATCH)
+export async function PATCH(request)
+{
+    const userId = request.nextUrl.searchParams.get("id");
+    const { role } = await request.json(); // Expect the new role in the request body
+
+    if (!userId) {
+        return NextResponse.json({ success: false, msg: "User ID is required" }, { status: 400 });
+    }
+
+    try
+    {
+        const updatedUser = await UserModel.findByIdAndUpdate(userId, { role }, { new: true });
+        if (!updatedUser) {
+            return NextResponse.json({ success: false, msg: "User not found" }, { status: 404 });
+        }
+        return NextResponse.json({ success: true, msg: "User role updated", updatedUser });
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        return NextResponse.json({ success: false, msg: "Failed to update user", error: error.message }, { status: 500 });
+    }
+}
