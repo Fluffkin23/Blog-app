@@ -14,7 +14,7 @@ import {deleteUser, makeAdmin, makeUser, useAuth} from "@/app/functions/user_man
 
 export default function UserManagement()
 {
-    const { isLoading, isAuthenticated, hasRequiredRole } = useAuth('admin');
+    const { isAuthenticated, hasRequiredRole } = useAuth('admin');
     const { users, loading, error, setUsers } = useFetchUsers(); // Use the custom hook
 
     if (loading) return <p>Loading...</p>;

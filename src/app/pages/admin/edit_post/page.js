@@ -93,25 +93,32 @@ export default function EditBlogPage()
         }
     };
     return (
-        <Box component="form" onSubmit={onSubmitHandler} sx={{ p: 2 }}>
+        <Box component="form" onSubmit={onSubmitHandler} sx={{p: 2}}>
             <Typography variant="h6">Edit Blog</Typography>
             <label htmlFor='image'>
-                {image ? (
+                {image && (image instanceof File || image instanceof Blob) ? (
                     <img
-                        src={typeof image === 'string' ? image : URL.createObjectURL(image)} // Display the existing image or newly selected image
+                        src={URL.createObjectURL(image)}
+                        alt='Blog Thumbnail'
+                        width={140}
+                        height={70}
+                    />
+                ) : image ? (
+                    <img
+                        src={image} // Assuming 'image' is a URL if not a File or Blob
                         alt='Blog Thumbnail'
                         width={140}
                         height={70}
                     />
                 ) : (
-                    <PhotoCameraIcon sx={{ fontSize: 70 }} />
+                    <PhotoCameraIcon sx={{fontSize: 70}}/>
                 )}
             </label>
             <TextField
                 hidden
                 type="file"
                 onChange={handleImageChange}
-                inputProps={{ accept: "image/*" }}
+                inputProps={{accept: "image/*"}}
             />
             <TextField
                 fullWidth
@@ -153,7 +160,7 @@ export default function EditBlogPage()
                     <MenuItem value="Lifestyle">Lifestyle</MenuItem>
                 </Select>
             </FormControl>
-            <Button type="submit" variant="contained" sx={{ mt: 2, bgcolor: 'primary.main' }}>
+            <Button type="submit" variant="contained" sx={{mt: 2, bgcolor: 'primary.main'}}>
                 UPDATE {/* Show "Update" on the Edit page */}
             </Button>
         </Box>

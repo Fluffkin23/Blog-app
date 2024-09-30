@@ -7,7 +7,8 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import {signIn, useSession} from "next-auth/react";
-import {useFormData, useImageHandler} from "@/app/functions/upload_edit_post/postUtils";
+import {useFormData, useImageHandler, useSubmitBlog} from "@/app/functions/upload_edit_post/postUtils";
+import {useAuth} from "@/app/functions/user_management/userUtils";
 
 
 
@@ -24,64 +25,30 @@ export default  function UploadPage  () {
   };
 
   const { data, handleInputChange, setData } = useFormData(initialState);
-  const { image, handleImageChange } = useImageHandler();
+  const { image, handleImageChange, setImage } = useImageHandler();
   const {data:session, status}=useSession();
+  const { isLoading, isAuthenticated, hasRequiredRole } = useAuth('admin');
 
-  if(status === 'loading')
-  {
-    return <p>Loading....</p>;
-  }
+  const onSubmitHandler = useSubmitBlog(initialState,setData,setImage)  // Get the custom hook function
 
-  if(!session)
-  {
-    return <p>You need to be loggin in to view this page</p>;
-
-  }
-
-  const {name, profile_pic,role} = session.user;
-  if(role !== 'admin')
-  {
-    return <p>You need to be admin in to view this page</p>;
-  }
+    if (isLoading) return <p>Loading...</p>;
+    if (!isAuthenticated) return <p>You need to be logged in to view this page</p>;
+    if (!hasRequiredRole) return <p>You need to be an admin to view this page</p>;
 
   const onDescriptionChange = (value) => {
     setData(data => ({ ...data, description: value }));
   };
 
 
-  const onSubmitHandler = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append('title', data.title);
-    formData.append('description', data.description);
-    formData.append('summary', data.summary);
-    formData.append('category', data.category);
-    formData.append('author', name);
-    formData.append('authorImage', profile_pic);
-    formData.append('image', image);
 
-    // reset the fields from the upload page
-    try {
-      const response = await axios.post('/api/blog', formData);
-      if (response.data.success) {
-        toast.success(response.data.msg);
-        setData(initialState);
-      }
-      else {
-        throw new Error('Submission failed');
-      }
-    } catch (error) {
-      toast.error(error.response.data.message || "Error");
-    }
-  };
 
   return (
-    <Box component="form" onSubmit={onSubmitHandler} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={(e) => {e.preventDefault(); onSubmitHandler(data, image, session);}} sx={{ p: 2 }}>
       <Typography variant="h6">Upload thumbnail</Typography>
       <label htmlFor='image'>
       {image ? (
           <img
-            src={typeof image === 'string' ? image : URL.createObjectURL(image)} // Display the existing image or newly selected image
+              src={URL.createObjectURL(image)}
             alt='Upload Thumbnail'
             width={140}
             height={70}
