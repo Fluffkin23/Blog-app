@@ -48,6 +48,11 @@ export default function AdminDashboard({children})
         { text: "User Management", icon: <PersonIcon />, path: "user_management" },
     ];
 
+    const handleEdit = (id) =>
+    {
+        router.push(`/pages/admin/edit_blog?id=${id}`);
+    }
+
     return (
         <Box sx={{ display: "flex" }}>
             <CssBaseline />

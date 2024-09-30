@@ -8,103 +8,21 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PersonIcon from "@mui/icons-material/Person";
 import {useSession} from "next-auth/react";
+import {useFetchUsers} from "@/app/functions/user_management/useFetchUsers";
+import {deleteUser, makeAdmin, makeUser, useAuth} from "@/app/functions/user_management/userUtils";
 
 
 export default function UserManagement()
 {
-    const {data:session, status}=useSession();
-    const [users,setUsers] = useState([]);
+    const { isLoading, isAuthenticated, hasRequiredRole } = useAuth('admin');
+    const { users, loading, error, setUsers } = useFetchUsers(); // Use the custom hook
 
-    useEffect(() => {
-        // Fetch all users
-        const fetchUsers = async () =>
-        {
-            try
-            {
-                const response = await axios.get("/api/user");
-                setUsers(response.data.userData);
-            }
-            catch (error)
-            {
-                console.error("Error fetching user list:", error);
-            }
-        };
-        fetchUsers();
-    },[])
+    if (loading) return <p>Loading...</p>;
+    if (error) return <p>Error fetching users</p>;
+    if (!isAuthenticated) return <p>You need to be logged in to view this page</p>;
+    if (!hasRequiredRole) return <p>You need to be an admin to view this page</p>;
 
-    if(status === 'loading')
-    {
-        return <p>Loading....</p>;
-    }
 
-    if(!session)
-    {
-        return <p>You need to be loggin in to view this page</p>;
-
-    }
-    const {role} = session.user;
-    if(role !== 'admin')
-    {
-        return <p>You need to be admin in to view this page</p>;
-    }
-
-    // Function to delete a user
-    const handleDelete = async (id) =>
-    {
-        try {
-            const response = await axios.delete(`/api/user?id=${id}`);  // Make DELETE request
-            if (response.data.success) {
-                setUsers(users.filter((user) => user._id !== id));  // Update UI to remove the deleted user
-                toast.success("User deleted successfully");
-            } else {
-                throw new Error(response.data.msg);
-            }
-        } catch (error) {
-            console.error("Error deleting user:", error);
-            toast.error("Failed to delete user");
-        }
-    };
-
-    // function to make a user admin
-    const handleMakeAdmin = async (id) =>
-    {
-        console.log("Making user admin, ID:", id);  // Debugging: Check if function is called
-        try {
-            const response = await axios.patch(`/api/user?id=${id}`, { role: "admin" });
-            if (response.data.success) {
-                setUsers(
-                    users.map((user) =>
-                        user._id === id ? { ...user, role: "admin" } : user
-                    )
-                );
-                toast.success("User role updated to admin");
-            } else {
-                throw new Error(response.data.msg);
-            }
-        } catch (error) {
-            console.error("Error updating user role:", error);
-            toast.error("Failed to update user role");
-        }
-    };
-
-    const handleMakeUser = async (id) => {
-        try {
-            const response = await axios.patch(`/api/user?id=${id}`, { role: "user" }); // Change role to user
-            if (response.data.success) {
-                setUsers(
-                    users.map((user) =>
-                        user._id === id ? { ...user, role: "user" } : user
-                    )
-                );
-                toast.success("User role updated to regular user");
-            } else {
-                throw new Error(response.data.msg);
-            }
-        } catch (error) {
-            console.error("Error updating user role:", error);
-            toast.error("Failed to update user role");
-        }
-    };
 
     return (
         <Box sx={{ padding: 2 }}>
@@ -128,7 +46,7 @@ export default function UserManagement()
                                 <TableCell>
                                     {/* Delete User Button */}
                                     <IconButton
-                                        onClick={() => handleDelete(user._id)}
+                                        onClick={() => deleteUser(user._id)}
                                         color="error"
                                     >
                                         <DeleteIcon />
@@ -138,7 +56,7 @@ export default function UserManagement()
                                     {user.role === "admin" ? (
                                         // If user is admin, show "Make User" icon
                                         <IconButton
-                                            onClick={() => handleMakeUser(user._id)}
+                                            onClick={() => makeUser(user._id, users,setUsers)}
                                             color="secondary"
                                         >
                                             <PersonIcon /> {/* Use a regular person icon for "Make User" */}
@@ -146,7 +64,7 @@ export default function UserManagement()
                                     ) : (
                                         // If user is not admin, show "Make Admin" icon
                                         <IconButton
-                                            onClick={() => handleMakeAdmin(user._id)}
+                                            onClick={() => makeAdmin(user._id, users,setUsers)}
                                             color="primary"
                                         >
                                             <AdminPanelSettingsIcon /> {/* Admin icon for "Make Admin" */}

@@ -8,15 +8,10 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useSearchParams } from 'next/navigation';
 import { signIn, useSession } from "next-auth/react";
-import {useFetchBlogById} from "@/app/functions/edit_blog/useFetchBlogById";
-import {useForm} from "@/app/functions/edit_blog/useForm";
 
 export default function EditBlogPage() {
-    const {data:session, status} = useSession();
-    const searchParams = useSearchParams();
-    const blogId = searchParams.get("id");
-
-    const { formData, image, handleChange, handleDescriptionChange, handleImageChange, setFormData, setImage } = useForm({
+    const [image, setImage] = useState(null);
+    const [data, setData] = useState({
         title: "",
         description: "",
         summary: "",
@@ -24,23 +19,54 @@ export default function EditBlogPage() {
         author: "",
         authorImage: ""
     });
-
-    useFetchBlogById(blogId, setFormData, setImage);
-
+    const { data: session, status } = useSession();
+    const searchParams = useSearchParams();
+    const blogId = searchParams.get('id'); // Get the blog ID from the URL
+    // Fetch the blog post details using the blog ID
+    useEffect(() => {
+        if (blogId) {
+            const fetchBlog = async () => {
+                try {
+                    const response = await axios.get(`/api/blog?id=${blogId}`);
+                    const blog = response.data;
+                    setData({
+                        title: blog.title,
+                        description: blog.description,
+                        summary: blog.summary,
+                        category: blog.category,
+                        author: blog.author,
+                        authorImage: blog.authorImage
+                    });
+                    setImage(blog.image); // Assuming the image is stored as a URL
+                } catch (error) {
+                    console.error('Error fetching blog:', error);
+                }
+            };
+            fetchBlog();
+        }
+    }, [blogId]);
     if (status === 'loading') {
         return <p>Loading....</p>;
     }
-
     if (!session) {
         return <p>You need to be logged in to view this page</p>;
     }
-
     const { name, profile_pic, role } = session.user;
     if (role !== 'admin') {
         return <p>You need to be an admin to view this page</p>;
     }
-
-
+    const onChangeHandler = (event) => {
+        const { name, value } = event.target;
+        setData(data => ({ ...data, [name]: value }));
+    };
+    const onDescriptionChange = (value) => {
+        setData(data => ({ ...data, description: value }));
+    };
+    const onImageChange = (event) => {
+        if (event.target.files && event.target.files[0]) {
+            setImage(event.target.files[0]);
+        }
+    };
     const onSubmitHandler = async (e) => {
         e.preventDefault();
         const formData = new FormData();
@@ -51,14 +77,12 @@ export default function EditBlogPage() {
         formData.append('author', name);
         formData.append('authorImage', profile_pic);
         formData.append('image', image);
-
         try {
             const response = await axios.put(`/api/blog?id=${blogId}`, formData);  // Send a PUT request to update the blog
-
             if (response.data.success) {
                 toast.success(response.data.msg);
                 setImage(null);
-                setFormData({
+                setData({
                     title: "",
                     description: "",
                     summary: "",
@@ -73,7 +97,6 @@ export default function EditBlogPage() {
             toast.error(error.response?.data?.message || "Error");
         }
     };
-
     return (
         <Box component="form" onSubmit={onSubmitHandler} sx={{ p: 2 }}>
             <Typography variant="h6">Edit Blog</Typography>
@@ -92,7 +115,7 @@ export default function EditBlogPage() {
             <TextField
                 hidden
                 type="file"
-                onChange={handleImageChange}
+                onChange={onImageChange}
                 inputProps={{ accept: "image/*" }}
             />
             <TextField
@@ -103,8 +126,8 @@ export default function EditBlogPage() {
                 name="title"
                 label="Blog title"
                 type="text"
-                value={formData.title}
-                onChange={handleChange}
+                value={data.title}
+                onChange={onChangeHandler}
             />
             <TextField
                 fullWidth
@@ -114,20 +137,20 @@ export default function EditBlogPage() {
                 name="summary"
                 label="Blog summary"
                 type="text"
-                value={formData.summary}
-                onChange={handleChange}
+                value={data.summary}
+                onChange={onChangeHandler}
             />
             <ReactQuill
                 theme="snow"
-                value={formData.description}
-                onChange={handleChange}
+                value={data.description}
+                onChange={onDescriptionChange}
             />
             <FormControl fullWidth margin="normal">
                 <InputLabel>Blog category</InputLabel>
                 <Select
                     name="category"
-                    value={formData.category}
-                    onChange={handleChange}
+                    value={data.category}
+                    onChange={onChangeHandler}
                     label="Blog category"
                 >
                     <MenuItem value="Startup">Startup</MenuItem>
