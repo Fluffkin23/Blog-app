@@ -18,7 +18,7 @@ export default function Page()
 
     const handleEdit = (id) =>
     {
-        router.push(`/pages/admin/edit_blog?id=${id}`)
+        router.push(`/pages/admin/edit_post?id=${id}`)
     }
 
     if(loading)

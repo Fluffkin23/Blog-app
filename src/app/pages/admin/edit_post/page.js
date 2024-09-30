@@ -8,20 +8,28 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useSearchParams } from 'next/navigation';
 import { signIn, useSession } from "next-auth/react";
+import {useFormData, useImageHandler} from "@/app/functions/upload_edit_post/postUtils";
 
-export default function EditBlogPage() {
-    const [image, setImage] = useState(null);
-    const [data, setData] = useState({
+export default function EditBlogPage()
+{
+    const initialState ={
         title: "",
         description: "",
         summary: "",
         category: "",
         author: "",
         authorImage: ""
-    });
+    };
+
+    const { data, handleInputChange, setData } = useFormData(initialState);
+    const {image,handleImageChange, setImage, resetImage} = useImageHandler();
     const { data: session, status } = useSession();
     const searchParams = useSearchParams();
     const blogId = searchParams.get('id'); // Get the blog ID from the URL
+
+
+
+
     // Fetch the blog post details using the blog ID
     useEffect(() => {
         if (blogId) {
@@ -44,7 +52,7 @@ export default function EditBlogPage() {
             };
             fetchBlog();
         }
-    }, [blogId]);
+    }, [blogId, setData, setImage]);
     if (status === 'loading') {
         return <p>Loading....</p>;
     }
@@ -55,18 +63,11 @@ export default function EditBlogPage() {
     if (role !== 'admin') {
         return <p>You need to be an admin to view this page</p>;
     }
-    const onChangeHandler = (event) => {
-        const { name, value } = event.target;
-        setData(data => ({ ...data, [name]: value }));
-    };
+
     const onDescriptionChange = (value) => {
         setData(data => ({ ...data, description: value }));
     };
-    const onImageChange = (event) => {
-        if (event.target.files && event.target.files[0]) {
-            setImage(event.target.files[0]);
-        }
-    };
+
     const onSubmitHandler = async (e) => {
         e.preventDefault();
         const formData = new FormData();
@@ -75,21 +76,15 @@ export default function EditBlogPage() {
         formData.append('summary', data.summary);
         formData.append('category', data.category);
         formData.append('author', name);
-        formData.append('authorImage', profile_pic);
+        formData.append('authorImage', session.user.profile_pic);
         formData.append('image', image);
         try {
             const response = await axios.put(`/api/blog?id=${blogId}`, formData);  // Send a PUT request to update the blog
-            if (response.data.success) {
-                toast.success(response.data.msg);
+            if (response.data.success)
+            {
+                toast.success('Blog updated successfully!');
+                setData(initialState);
                 setImage(null);
-                setData({
-                    title: "",
-                    description: "",
-                    summary: "",
-                    category: "",
-                    author: name,
-                    authorImage: profile_pic
-                });
             } else {
                 throw new Error('Update failed');
             }
@@ -115,7 +110,7 @@ export default function EditBlogPage() {
             <TextField
                 hidden
                 type="file"
-                onChange={onImageChange}
+                onChange={handleImageChange}
                 inputProps={{ accept: "image/*" }}
             />
             <TextField
@@ -127,7 +122,7 @@ export default function EditBlogPage() {
                 label="Blog title"
                 type="text"
                 value={data.title}
-                onChange={onChangeHandler}
+                onChange={handleInputChange}
             />
             <TextField
                 fullWidth
@@ -138,7 +133,7 @@ export default function EditBlogPage() {
                 label="Blog summary"
                 type="text"
                 value={data.summary}
-                onChange={onChangeHandler}
+                onChange={handleInputChange}
             />
             <ReactQuill
                 theme="snow"
@@ -150,7 +145,7 @@ export default function EditBlogPage() {
                 <Select
                     name="category"
                     value={data.category}
-                    onChange={onChangeHandler}
+                    onChange={handleInputChange}
                     label="Blog category"
                 >
                     <MenuItem value="Startup">Startup</MenuItem>

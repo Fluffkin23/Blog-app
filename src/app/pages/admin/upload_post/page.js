@@ -7,23 +7,24 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import {signIn, useSession} from "next-auth/react";
+import {useFormData, useImageHandler} from "@/app/functions/upload_edit_post/postUtils";
 
 
 
 
 export default  function UploadPage  () {
 
-  const [image, setImage] = useState(null);
-
-  const [data, setData] = useState({
+  const initialState = {
     title: "",
     description: "",
     summary:"",
     category: "", // default category
     author: "",
     authorImage:""
-  });
+  };
 
+  const { data, handleInputChange, setData } = useFormData(initialState);
+  const { image, handleImageChange } = useImageHandler();
   const {data:session, status}=useSession();
 
   if(status === 'loading')
@@ -43,21 +44,10 @@ export default  function UploadPage  () {
     return <p>You need to be admin in to view this page</p>;
   }
 
-
-  const onChangeHandler = (event) => {
-    const { name, value } = event.target;
-    setData(data => ({ ...data, [name]: value }));
-  };
-
   const onDescriptionChange = (value) => {
     setData(data => ({ ...data, description: value }));
   };
 
-  const onImageChange = (event) => {
-    if (event.target.files && event.target.files[0]) {
-      setImage(event.target.files[0]);
-    }
-  };
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
@@ -75,16 +65,9 @@ export default  function UploadPage  () {
       const response = await axios.post('/api/blog', formData);
       if (response.data.success) {
         toast.success(response.data.msg);
-        setImage(null);
-        setData({
-          title: "",
-          description: "",
-          summary:"",
-          category: "",
-          author: name,
-          authorImage: profile_pic,
-        });
-      } else {
+        setData(initialState);
+      }
+      else {
         throw new Error('Submission failed');
       }
     } catch (error) {
@@ -98,7 +81,7 @@ export default  function UploadPage  () {
       <label htmlFor='image'>
       {image ? (
           <img
-            src={URL.createObjectURL(image)}
+            src={typeof image === 'string' ? image : URL.createObjectURL(image)} // Display the existing image or newly selected image
             alt='Upload Thumbnail'
             width={140}
             height={70}
@@ -110,7 +93,7 @@ export default  function UploadPage  () {
       <TextField
         hidden
         type="file"
-        onChange={onImageChange}
+        onChange={handleImageChange}
         inputProps={{ accept: "image/*" }}
         required
       />
@@ -123,7 +106,7 @@ export default  function UploadPage  () {
         label="Blog title"
         type="text"
         value={data.title}
-        onChange={onChangeHandler}
+        onChange={handleInputChange}
       />
       <TextField
         fullWidth
@@ -134,19 +117,19 @@ export default  function UploadPage  () {
         label="Blog summary"
         type="text"
         value={data.summary}
-        onChange={onChangeHandler}
+        onChange={handleInputChange}
       />
         <ReactQuill
             theme="snow"
             value={data.description}
             onChange={onDescriptionChange}
-      ></ReactQuill>      
+      ></ReactQuill>
       <FormControl fullWidth margin="normal">
         <InputLabel>Blog category</InputLabel>
         <Select
           name="category"
           value={data.category}
-          onChange={onChangeHandler}
+          onChange={handleInputChange}
           label="Blog category"
         >
           <MenuItem value="Startup">Startup</MenuItem>
